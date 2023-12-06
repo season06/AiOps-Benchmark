@@ -19,8 +19,7 @@ The experiment is built on the AWS cloud platform. The main services we use incl
     - Select existing **security group** (refer to next section)
 
 ### Set Security Group
-The security group acts as a virtual firewall. The traffic that reaches the instance which is allowed by the security group rules.  
-According to the principle of least privilege, we only open the necessary ports to the specific IP address:
+The security group acts as a virtual firewall. The traffic that reaches the instance which is allowed by the security group rules. According to the principle of least privilege, we only open the necessary ports to the specific IP address.
 
 - First, navigate to the Security Groups page 
 - Next, click `Create security group`
@@ -50,9 +49,17 @@ According to the principle of least privilege, we only open the necessary ports 
     - Select the EC2 instance you want to associate
     - Then `Associate`
 
-You can see that the instance has a static IP you created via Elastic IP, rather than a dynamic IP.
+In EC2 instance dashboard, You can see that the instance has a static IP you created via Elastic IP, rather than a dynamic IP.
 
-## SetUp Database
+## Install Services
+After setting up EC2 instances successfully, please connect to the server remotely and install specific services on each server.
+
+> How to connect server by SSH?  
+> 1. Download the key pair you created when created the EC2 instance  
+> 2. Use the `ssh -i {Key_Name}.pem ubuntu@{Server_IP}` to establish a connection  
+> - Note: Traffic is allowed through port `22` due to security group rules
+
+### SetUp Database
 - Install MySQL server
 ```bash
 sudo apt update -y
@@ -74,7 +81,7 @@ ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'password
 
 > Then you can login to MySQL server by `mysql -u root -p` with the password.
 
-## Setup Backend Server - PetClinic
+### Setup Backend Server - PetClinic
 - Install dependency
 ```bash
 sudo apt update -y
@@ -113,38 +120,38 @@ cd spring-petclinic-rest
 `http://{Backend_Server_IP}:9966/petclinic`
 > Note: Traffic is allowed through port `9966` due to security group rules
 
-## Setup Monitoring System
-- What is [Prometheus](https://prometheus.io/docs/introduction/overview/)?
+### Setup Monitoring System
+- What is [Prometheus](https://prometheus.io/docs/introduction/overview/)?  
   Prometheus is an open-source systems monitoring that can effectively obtain performance matrics. The main features are:
-  - Use a pull-model to scrape metrics from the targets that expose an HTTP endpoint, that is the reason why we need to install exporter in target server and open the port
+  - Use a pull-model to scrape metrics from the targets that expose an HTTP endpoint, that is the reason why we need to install exporter in the target server and open the port
   - Targets are discovered via service discovery or static configuration
   - PromQL, a flexible query language like SQL, can be used to query the matrics data
 
-- What is [Grafana](https://grafana.com/docs/grafana/latest/fundamentals/)
+- What is [Grafana](https://grafana.com/docs/grafana/latest/fundamentals/)?  
   Grafana is an open-source visualization and analytics software. It allows users to query, visualize, and explore metrics, logs, and traces. But in our case, visualization is optional since we only need to export the metrics data into csv file.
 
-### Install Prometheus and Exporter
+#### Install Prometheus and Exporter
 The installation commands have been packaged into automated scripts, please clone this repository and execute on the servers:
 ```bash
-git clone 
+git clone https://github.com/season06/AiOps-Benchmark.git
 
-chmod +x automatic_bash_script/*.sh
+chmod +x bash_script/*.sh
 ```
 
-#### In Backend Server:
+##### In Backend Server:
 [JMX Exporter](https://github.com/prometheus/jmx_exporter)
 ```bash
-./automatic_bash_script/install_node_exporter.sh
-./automatic_bash_script/install_jmx_exporter.sh
+./bash_script/install_node_exporter.sh
+./bash_script/install_jmx_exporter.sh
 ```
 
-#### In Database Server:
+##### In Database Server:
 [Mysqld Exporter](https://github.com/prometheus/mysqld_exporter)
 ```bash
-./automatic_bash_script/install_node_exporter.sh
-./automatic_bash_script/install_mysqld_exporter.sh
+./bash_script/install_node_exporter.sh
+./bash_script/install_mysqld_exporter.sh
 ```
-- Please login to MySQL server and grant the permission manually
+- Login to MySQL server and grant the permission manually
 ```bash
 mysql -u root -p
 
@@ -157,19 +164,20 @@ cd mysqld_exporter-0.15.0.linux-amd64
 ./mysqld_exporter
 ```
 
-#### In Monitoring Server:
+##### In Monitoring Server:
 ```bash
-./automatic_bash_script/install_prometheus.sh
-./automatic_bash_script/install_node_exporter.sh
+./bash_script/install_prometheus.sh
+./bash_script/install_node_exporter.sh
 
 # install grafana (optional)
-./automatic_bash_script/install_grafana.sh
+./bash_script/install_grafana.sh
 ```
 - Configure the target servers in `prometheus.yml`
 ```bash
 ./config_promethues.sh {Backend_IP} {Database_IP}
 ```
-> Check the status of the monitored target servers from `http://{Monitoring_Server_IP}:9090/targets`
+> If the setup is successful, check the status of the monitored target servers in Prometheus Dashboard: `http://{Monitoring_Server_IP}:9090/targets`  
+> Grafana Dashboard: `http://{Monitoring_Server_IP}:3000`  
 
 ### Enable Tomcat Log
 ```bash
